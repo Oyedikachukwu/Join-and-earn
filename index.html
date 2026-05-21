@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Destiny | Free Web3 & Airdrop Community</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Sora:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --green:   #00e676;
+      --teal:    #00bfa5;
+      --gold:    #ffd740;
+      --purple:  #7c4dff;
+      --bg:      #050a0f;
+      --glass:   rgba(255,255,255,0.05);
+      --border:  rgba(0,230,118,0.2);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg);
+      color: #e0f7ef;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ── Custom Cursor ── */
+    #cursor {
+      position: fixed; width: 14px; height: 14px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      transition: transform .1s, background .3s;
+      box-shadow: 0 0 12px var(--green);
+    }
+    #cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1.5px solid var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%);
+      transition: transform .18s ease, opacity .3s;
+      opacity: .6;
+    }
+
+    /* ── Canvas BG ── */
+    #bg-canvas {
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Noise Overlay ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 1;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none; opacity: .4;
+    }
+
+    /* ── Layout ── */
+    main { position: relative; z-index: 2; }
+
+    section { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 24px; }
+
+    /* ── Hero ── */
+    .hero { gap: 40px; text-align: center; }
+
+    .avatar-wrap {
+      position: relative; width: 160px; height: 160px;
+      animation: float 5s ease-in-out infinite;
+    }
+    .avatar-wrap img {
+      width: 100%; height: 100%; border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--green);
+      box-shadow: 0 0 30px rgba(0,230,118,.4), 0 0 60px rgba(0,230,118,.15);
+    }
+    .avatar-ring {
+      position: absolute; inset: -10px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,230,118,.3);
+      animation: spin 8s linear infinite;
+    }
+    .avatar-ring::before {
+      content: '';
+      position: absolute; top: -4px; left: 50%;
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 10px var(--green);
+    }
+    .avatar-ring2 {
+      position: absolute; inset: -22px;
+      border-radius: 50%;
+      border: 1px dashed rgba(0,191,165,.25);
+      animation: spin 14s linear infinite reverse;
+    }
+
+    @keyframes float {
+      0%,100% { transform: translateY(0px); }
+      50%      { transform: translateY(-14px); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(0,230,118,.1);
+      border: 1px solid var(--border);
+      border-radius: 100px; padding: 6px 16px;
+      font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--green);
+      animation: fadein .8s ease both;
+    }
+    .badge::before { content: '●'; font-size: .5rem; animation: pulse 1.5s ease infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(2.4rem, 7vw, 5rem);
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #fff 0%, var(--green) 50%, var(--teal) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      animation: fadein 1s ease .2s both;
+    }
+
+    .subtitle {
+      max-width: 560px;
+      font-size: clamp(.95rem,2vw,1.15rem);
+      line-height: 1.75;
+      color: #8ab8a0;
+      animation: fadein 1s ease .4s both;
+    }
+
+    .cta-row {
+      display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;
+      animation: fadein 1s ease .6s both;
+    }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: linear-gradient(135deg, #00e676, #00bfa5);
+      color: #020f08;
+      font-family: 'Orbitron', monospace;
+      font-weight: 700; font-size: .85rem; letter-spacing: .08em;
+      text-decoration: none; border-radius: 14px; padding: 16px 32px;
+      box-shadow: 0 0 28px rgba(0,230,118,.35), 0 8px 32px rgba(0,0,0,.4);
+      transition: transform .25s, box-shadow .25s;
+      position: relative; overflow: hidden;
+    }
+    .btn-primary::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.15), transparent);
+      opacity: 0; transition: opacity .25s;
+    }
+    .btn-primary:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 0 44px rgba(0,230,118,.5), 0 12px 40px rgba(0,0,0,.5); }
+    .btn-primary:hover::after { opacity: 1; }
+
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      color: #c8f0e0;
+      font-size: .85rem; text-decoration: none; border-radius: 14px; padding: 16px 28px;
+      transition: background .25s, transform .25s, border-color .25s;
+    }
+    .btn-secondary:hover { background: rgba(0,230,118,.08); border-color: var(--green); transform: translateY(-2px); }
+
+    @keyframes fadein { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── Stats Bar ── */
+    .stats-bar {
+      display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;
+      animation: fadein 1s ease .8s both;
+    }
+    .stat-chip {
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 100px; padding: 8px 20px;
+      font-size: .8rem; display: flex; align-items: center; gap: 8px;
+    }
+    .stat-chip span { color: var(--green); font-weight: 600; }
+
+    /* ── Section Title ── */
+    .section-label {
+      font-family: 'Orbitron', monospace;
+      font-size: .7rem; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--green); margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      font-weight: 700; text-align: center;
+      background: linear-gradient(135deg, #fff 30%, var(--teal));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 48px;
+    }
+
+    /* ── Cards Grid ── */
+    .cards-section { gap: 0; }
+    .cards-header { text-align: center; margin-bottom: 0; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px; max-width: 1080px; width: 100%;
+    }
+
+    .card {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 24px; padding: 32px 28px;
+      transition: transform .35s cubic-bezier(.23,1,.32,1), box-shadow .35s, border-color .35s;
+      position: relative; overflow: hidden;
+      transform-style: preserve-3d;
+    }
+    .card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,230,118,.4), transparent);
+    }
+    .card:hover {
+      transform: translateY(-8px) rotateX(4deg);
+      box-shadow: 0 24px 60px rgba(0,0,0,.5), 0 0 30px rgba(0,230,118,.1);
+      border-color: rgba(0,230,118,.4);
+    }
+
+    .card-icon {
+      font-size: 2rem; margin-bottom: 16px;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 56px; height: 56px; border-radius: 16px;
+      background: rgba(0,230,118,.1);
+      border: 1px solid rgba(0,230,118,.2);
+    }
+    .card h3 {
+      font-family: 'Orbitron', monospace;
+      font-size: 1rem; font-weight: 700; margin-bottom: 10px;
+      color: #d4f5e5;
+    }
+    .card p { font-size: .88rem; line-height: 1.7; color: #7aab94; }
+
+    /* ── Earnings Section ── */
+    .earn-section { background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(0,230,118,.04) 0%, transparent 70%); }
+
+    .earn-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+      gap: 16px; max-width: 900px; width: 100%;
+    }
+    .earn-card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 20px; padding: 28px 20px; text-align: center;
+      transition: transform .3s, border-color .3s;
+    }
+    .earn-card:hover { transform: scale(1.04); border-color: rgba(255,215,64,.35); }
+    .earn-card .earn-icon { font-size: 2.4rem; margin-bottom: 12px; }
+    .earn-card h4 {
+      font-family: 'Orbitron', monospace;
+      font-size: .85rem; color: var(--gold); margin-bottom: 6px;
+    }
+    .earn-card p { font-size: .8rem; color: #7aab94; line-height: 1.6; }
+
+    /* ── Ticker ── */
+    .ticker-wrap {
+      width: 100%; overflow: hidden;
+      border-top: 1px solid rgba(0,230,118,.1);
+      border-bottom: 1px solid rgba(0,230,118,.1);
+      background: rgba(0,230,118,.03);
+      padding: 12px 0; position: relative; z-index: 2;
+    }
+    .ticker {
+      display: flex; gap: 60px;
+      animation: ticker 22s linear infinite;
+      white-space: nowrap;
+    }
+    .ticker-item {
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'Orbitron', monospace; font-size: .72rem;
+      color: var(--green); letter-spacing: .1em;
+    }
+    .ticker-item .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
+    @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+    /* ── Testimonial / Social Proof ── */
+    .proof-section { gap: 0; }
+    .proof-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px; max-width: 900px; width: 100%;
+    }
+    .proof-card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 20px; padding: 28px 24px;
+      position: relative;
+    }
+    .proof-card::before {
+      content: '"'; position: absolute; top: 12px; right: 20px;
+      font-size: 4rem; color: rgba(0,230,118,.15); font-family: Georgia, serif;
+      line-height: 1;
+    }
+    .proof-card p { font-size: .88rem; line-height: 1.75; color: #93c6ad; margin-bottom: 16px; }
+    .proof-author { display: flex; align-items: center; gap: 10px; }
+    .proof-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; color: #020f08;
+    }
+    .proof-name { font-size: .8rem; font-weight: 600; color: #c8f0e0; }
+    .proof-role { font-size: .72rem; color: #577a68; }
+
+    /* ── CTA Section ── */
+    .cta-section {
+      background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(0,230,118,.07) 0%, transparent 70%);
+      text-align: center; gap: 32px;
+    }
+    .cta-section h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.8rem, 5vw, 3.2rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, #fff 0%, var(--green) 60%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .cta-section p { max-width: 500px; color: #7aab94; line-height: 1.75; }
+
+    /* ── Footer ── */
+    footer {
+      position: relative; z-index: 2;
+      border-top: 1px solid rgba(255,255,255,.06);
+      padding: 32px 24px;
+      text-align: center;
+      font-size: .78rem; color: #3d6b55;
+    }
+    footer a { color: var(--green); text-decoration: none; }
+
+    /* ── Scroll Reveal ── */
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s ease, transform .7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .cta-row { flex-direction: column; align-items: center; }
+      .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
+    }
+
+    /* WhatsApp icon SVG */
+    .wa-icon { width: 20px; height: 20px; fill: currentColor; }
+  </style>
+</head>
+<body>
+
+  <div id="cursor"></div>
+  <div id="cursor-ring"></div>
+
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- Ticker -->
+  <div class="ticker-wrap">
+    <div class="ticker" id="ticker">
+      <span class="ticker-item"><span class="dot"></span> FREE AIRDROPS DAILY</span>
+      <span class="ticker-item"><span class="dot"></span> WEB3 TESTNETS</span>
+      <span class="ticker-item"><span class="dot"></span> EARN IN NAIRA • DOLLARS • CRYPTO</span>
+      <span class="ticker-item"><span class="dot"></span> DATA ANNOTATIONS</span>
+      <span class="ticker-item"><span class="dot"></span> PAYPAL REDEEM</span>
+      <span class="ticker-item"><span class="dot"></span> COIN EXCHANGE</span>
+      <span class="ticker-item"><span class="dot"></span> 100% LEGIT FREE COMMUNITY</span>
+      <span class="ticker-item"><span class="dot"></span> FREE AIRDROPS DAILY</span>
+      <span class="ticker-item"><span class="dot"></span> WEB3 TESTNETS</span>
+      <span class="ticker-item"><span class="dot"></span> EARN IN NAIRA • DOLLARS • CRYPTO</span>
+      <span class="ticker-item"><span class="dot"></span> DATA ANNOTATIONS</span>
+      <span class="ticker-item"><span class="dot"></span> PAYPAL REDEEM</span>
+      <span class="ticker-item"><span class="dot"></span> COIN EXCHANGE</span>
+      <span class="ticker-item"><span class="dot"></span> 100% LEGIT FREE COMMUNITY</span>
+    </div>
+  </div>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="avatar-wrap">
+        <div class="avatar-ring2"></div>
+        <div class="avatar-ring"></div>
+        <img src="123.jpg" alt="Destiny"/>
+      </div>
+
+      <div class="badge">🟢 Live Community · Always Free</div>
+
+      <h1>Earn With<br/>Destiny</h1>
+
+      <p class="subtitle">
+        Web3 Airdrop Farming · Testnets · Data Annotations · Magnet Drops —
+        all shared <strong style="color:#00e676">100% free</strong> on WhatsApp.
+        Earn in <strong style="color:#ffd740">Naira, Dollars</strong> or <strong style="color:#7c4dff">Crypto</strong>.
+      </p>
+
+      <div class="cta-row">
+        <a href="https://whatsapp.com/channel/0029VbCeSbM8aKvLWXBULl11" target="_blank" rel="noopener" class="btn-primary">
+          <svg class="wa-icon" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Join Free Channel
+        </a>
+        <a href="#what-you-get" class="btn-secondary">
+          <span>See What You Get</span>
+          <span>↓</span>
+        </a>
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat-chip">🎯 <span>Web3</span> Airdrops</div>
+        <div class="stat-chip">💰 <span>Free</span> Daily Updates</div>
+        <div class="stat-chip">🌍 <span>NGN · USD · Crypto</span></div>
+        <div class="stat-chip">✅ <span>100%</span> Legit</div>
+      </div>
+    </section>
+
+    <!-- WHAT YOU GET -->
+    <section id="what-you-get" class="cards-section" style="gap:0;">
+      <div class="cards-header reveal">
+        <p class="section-label">What's inside</p>
+        <h2 class="section-title">Everything. Totally Free.</h2>
+      </div>
+      <div class="grid">
+        <div class="card reveal">
+          <div class="card-icon">🪂</div>
+          <h3>Airdrop Farming</h3>
+          <p>Get the freshest Web3 airdrop opportunities — step by step guides so you never miss a drop that could pay out big.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card-icon">🧪</div>
+          <h3>Testnet Campaigns</h3>
+          <p>Early access to testnet programs. Participate before the crowd and earn retroactive rewards when projects launch.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card-icon">🧲</div>
+          <h3>Magnet Drops</h3>
+          <p>Exclusive magnet airdrop leads shared directly to you — no gatekeeping, no hidden fees, ever.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card-icon">📝</div>
+          <h3>Data Annotations</h3>
+          <p>Earn through legitimate data labelling and annotation tasks. No experience needed — Destiny walks you through it.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card-icon">💳</div>
+          <h3>PayPal Redeem</h3>
+          <p>Learn how to redeem your PayPal earnings and convert them quickly. Smooth, trusted, and straightforward.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card-icon">🔄</div>
+          <h3>Coin Exchange</h3>
+          <p>All kinds of crypto coins exchanged at good rates. Fast, reliable, and community-verified.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- EARN SECTION -->
+    <section class="earn-section" style="gap:0; padding-top: 80px;">
+      <div class="reveal" style="text-align:center; margin-bottom: 48px;">
+        <p class="section-label">Payout Options</p>
+        <h2 class="section-title">Get Paid Your Way</h2>
+      </div>
+      <div class="earn-grid">
+        <div class="earn-card reveal">
+          <div class="earn-icon">🇳🇬</div>
+          <h4>Nigerian Naira</h4>
+          <p>Cash out directly to your local bank account in NGN. Fast and accessible.</p>
+        </div>
+        <div class="earn-card reveal">
+          <div class="earn-icon">💵</div>
+          <h4>US Dollars</h4>
+          <p>Receive earnings in USD via PayPal or supported dollar payment platforms.</p>
+        </div>
+        <div class="earn-card reveal">
+          <div class="earn-icon">₿</div>
+          <h4>Cryptocurrency</h4>
+          <p>Earn and hold BTC, ETH, USDT and more directly in your wallet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOCIAL PROOF -->
+    <section class="proof-section" style="gap:0; padding-top: 80px;">
+      <div class="reveal" style="text-align:center; margin-bottom:48px;">
+        <p class="section-label">Community Love</p>
+        <h2 class="section-title">People Are Winning</h2>
+      </div>
+      <div class="proof-grid">
+        <div class="proof-card reveal">
+          <p>I joined Destiny's channel last month and already claimed 3 airdrops. The guides are clear and it's genuinely 100% free!</p>
+          <div class="proof-author">
+            <div class="proof-avatar">AO</div>
+            <div>
+              <div class="proof-name">Adaeze O.</div>
+              <div class="proof-role">Lagos, Nigeria</div>
+            </div>
+          </div>
+        </div>
+        <div class="proof-card reveal">
+          <p>Got my first testnet reward within a week. Destiny explains everything in simple terms. Very fun community too!</p>
+          <div class="proof-author">
+            <div class="proof-avatar">KM</div>
+            <div>
+              <div class="proof-name">Kingsley M.</div>
+              <div class="proof-role">Abuja, Nigeria</div>
+            </div>
+          </div>
+        </div>
+        <div class="proof-card reveal">
+          <p>Never thought I could earn crypto for free before I stumbled on this channel. The coin exchange rate is unbeatable!</p>
+          <div class="proof-author">
+            <div class="proof-avatar">FT</div>
+            <div>
+              <div class="proof-name">Fatima T.</div>
+              <div class="proof-role">Kano, Nigeria</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="cta-section">
+      <div class="reveal">
+        <p class="section-label">Ready?</p>
+        <h2>Start Earning<br/>Today — Free</h2>
+      </div>
+      <p class="reveal">Join hundreds of people already earning from Web3 airdrops, testnets, and more. Zero cost. Zero gatekeeping. Just tap below.</p>
+      <a href="https://whatsapp.com/channel/0029VbCeSbM8aKvLWXBULl11" target="_blank" rel="noopener" class="btn-primary reveal" style="font-size:1rem; padding:18px 40px;">
+        <svg class="wa-icon" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Join Destiny's Channel Now
+      </a>
+    </section>
+  </main>
+
+  <footer>
+    <p>Built with 💚 by <strong style="color:#00e676">Destiny</strong> · Free Web3 & Airdrop Community ·
+      <a href="https://whatsapp.com/channel/0029VbCeSbM8aKvLWXBULl11" target="_blank">WhatsApp Channel</a>
+    </p>
+  </footer>
+
+  <script>
+    /* ── Cursor ── */
+    const cur = document.getElementById('cursor');
+    const ring = document.getElementById('cursor-ring');
+    let mx=0,my=0,rx=0,ry=0;
+    document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; cur.style.left=mx+'px'; cur.style.top=my+'px'; });
+    (function animRing(){
+      rx += (mx-rx)*.12; ry += (my-ry)*.12;
+      ring.style.left=rx+'px'; ring.style.top=ry+'px';
+      requestAnimationFrame(animRing);
+    })();
+    document.querySelectorAll('a,button').forEach(el=>{
+      el.addEventListener('mouseenter',()=>{cur.style.transform='translate(-50%,-50%) scale(2)';});
+      el.addEventListener('mouseleave',()=>{cur.style.transform='translate(-50%,-50%) scale(1)';});
+    });
+
+    /* ── Three.js Particle Field ── */
+    const canvas = document.getElementById('bg-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.z = 6;
+
+    // Particles
+    const N = 1400;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(N*3);
+    const col = new Float32Array(N*3);
+    const sizes = new Float32Array(N);
+    for(let i=0;i<N;i++){
+      pos[i*3]   = (Math.random()-0.5)*20;
+      pos[i*3+1] = (Math.random()-0.5)*20;
+      pos[i*3+2] = (Math.random()-0.5)*10;
+      const t = Math.random();
+      if(t<0.5){      col[i*3]=0;    col[i*3+1]=0.9; col[i*3+2]=0.46; }
+      else if(t<0.8){ col[i*3]=0;    col[i*3+1]=0.75;col[i*3+2]=0.65; }
+      else{           col[i*3]=0.49; col[i*3+1]=0.3; col[i*3+2]=1;    }
+      sizes[i] = Math.random()*2.5+0.5;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+    geo.setAttribute('size',     new THREE.BufferAttribute(sizes,1));
+
+    const mat = new THREE.PointsMaterial({
+      size: 0.04, vertexColors: true, transparent: true,
+      opacity: 0.7, sizeAttenuation: true
+    });
+    const points = new THREE.Points(geo,mat);
+    scene.add(points);
+
+    // Floating torus rings
+    const rings = [];
+    const ringData = [
+      { r:2.4, tube:.012, color:0x00e676, x:3,  y:1,  z:-3 },
+      { r:1.8, tube:.01,  color:0x00bfa5, x:-3, y:-1, z:-4 },
+      { r:3.0, tube:.008, color:0x7c4dff, x:0,  y:2,  z:-5 },
+    ];
+    ringData.forEach(d=>{
+      const g = new THREE.TorusGeometry(d.r,d.tube,12,60);
+      const m = new THREE.MeshBasicMaterial({color:d.color, transparent:true, opacity:.35});
+      const mesh = new THREE.Mesh(g,m);
+      mesh.position.set(d.x,d.y,d.z);
+      scene.add(mesh); rings.push(mesh);
+    });
+
+    // Mouse parallax
+    let targetX=0, targetY=0;
+    document.addEventListener('mousemove',e=>{
+      targetX = (e.clientX/window.innerWidth - 0.5)*0.6;
+      targetY = (e.clientY/window.innerHeight - 0.5)*0.4;
+    });
+
+    const clock = new THREE.Clock();
+    (function animate(){
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+      points.rotation.y = t * 0.03;
+      points.rotation.x = t * 0.012;
+      camera.position.x += (targetX - camera.position.x) * 0.04;
+      camera.position.y += (-targetY - camera.position.y) * 0.04;
+      rings.forEach((r,i)=>{
+        r.rotation.x = t*0.25*(i%2?1:-1);
+        r.rotation.y = t*0.18;
+        r.position.y = ringData[i].y + Math.sin(t*0.4+i)*0.3;
+      });
+      renderer.render(scene,camera);
+    })();
+
+    window.addEventListener('resize',()=>{
+      renderer.setSize(window.innerWidth,window.innerHeight);
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    /* ── Scroll Reveal ── */
+    const reveals = document.querySelectorAll('.reveal');
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    reveals.forEach(r => io.observe(r));
+
+    /* ── 3D Card Tilt ── */
+    document.querySelectorAll('.card').forEach(card=>{
+      card.addEventListener('mousemove',e=>{
+        const {left,top,width,height} = card.getBoundingClientRect();
+        const x = (e.clientX-left)/width - 0.5;
+        const y = (e.clientY-top)/height - 0.5;
+        card.style.transform = `perspective(600px) rotateY(${x*14}deg) rotateX(${-y*10}deg) translateY(-8px)`;
+      });
+      card.addEventListener('mouseleave',()=>{
+        card.style.transform = '';
+      });
+    });
+  </script>
+</body>
+</html>
